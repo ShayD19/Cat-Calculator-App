@@ -237,3 +237,155 @@ body {
     font-weight: 600;
     min-height: 20px;
 }
+let currentInput = '';
+let operator = '';
+let previousInput = '';
+let justCalculated = false;
+
+const display = document.getElementById('display');
+const errorMessage = document.getElementById('errorMessage');
+
+function updateDisplay() {
+    display.value = currentInput || '0';
+}
+
+function clearDisplay() {
+    currentInput = '';
+    operator = '';
+    previousInput = '';
+    justCalculated = false;
+    errorMessage.textContent = '';
+    updateDisplay();
+    
+    // Fun cat reaction
+    const catFace = document.querySelector('.cat-face');
+    catFace.textContent = '😽';
+    setTimeout(() => {
+        catFace.textContent = '😸';
+    }, 500);
+}
+
+function deleteLast() {
+    if (currentInput) {
+        currentInput = currentInput.slice(0, -1);
+        updateDisplay();
+    }
+}
+
+function appendToDisplay(value) {
+    errorMessage.textContent = '';
+    
+    if (justCalculated && !isNaN(value)) {
+        currentInput = '';
+        justCalculated = false;
+    }
+    
+    if (['+', '-', '*', '/'].includes(value)) {
+        if (currentInput === '') {
+            if (value === '-') {
+                currentInput = '-';
+            }
+            return;
+        }
+        
+        if (previousInput !== '' && operator !== '' && currentInput !== '') {
+            calculate();
+        }
+        
+        operator = value;
+        previousInput = currentInput;
+        currentInput = '';
+        return;
+    }
+    
+    if (value === '.' && currentInput.includes('.')) {
+        return;
+    }
+    
+    currentInput += value;
+    updateDisplay();
+}
+
+function calculate() {
+    if (previousInput === '' || operator === '' || currentInput === '') {
+        return;
+    }
+    
+    const prev = parseFloat(previousInput);
+    const current = parseFloat(currentInput);
+    let result;
+    
+    try {
+        switch (operator) {
+            case '+':
+                result = prev + current;
+                break;
+            case '-':
+                result = prev - current;
+                break;
+            case '*':
+                result = prev * current;
+                break;
+            case '/':
+                if (current === 0) {
+                    throw new Error('Cannot divide by zero! 🙀');
+                }
+                result = prev / current;
+                break;
+            default:
+                return;
+        }
+        
+        // Round to avoid floating point errors
+        result = Math.round(result * 100000000) / 100000000;
+        
+        currentInput = result.toString();
+        operator = '';
+        previousInput = '';
+        justCalculated = true;
+        updateDisplay();
+        
+        // Fun cat reaction for successful calculation
+        const catFace = document.querySelector('.cat-face');
+        catFace.textContent = '😻';
+        setTimeout(() => {
+            catFace.textContent = '😸';
+        }, 1000);
+        
+    } catch (error) {
+        errorMessage.textContent = error.message;
+        const catFace = document.querySelector('.cat-face');
+        catFace.textContent = '🙀';
+        setTimeout(() => {
+            catFace.textContent = '😸';
+        }, 2000);
+    }
+}
+
+// Keyboard support
+document.addEventListener('keydown', function(event) {
+    const key = event.key;
+    
+    if (key >= '0' && key <= '9') {
+        appendToDisplay(key);
+    } else if (key === '.') {
+        appendToDisplay('.');
+    } else if (key === '+' || key === '-') {
+        appendToDisplay(key);
+    } else if (key === '*') {
+        appendToDisplay('*');
+    } else if (key === '/') {
+        event.preventDefault();
+        appendToDisplay('/');
+    } else if (key === 'Enter' || key === '=') {
+        event.preventDefault();
+        calculate();
+    } else if (key === 'Escape' || key === 'c' || key === 'C') {
+        clearDisplay();
+    } else if (key === 'Backspace') {
+        deleteLast();
+    }
+});
+
+// Initialize display
+updateDisplay();
